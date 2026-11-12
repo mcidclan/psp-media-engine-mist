@@ -267,22 +267,65 @@ int meThread(SceSize args, void *argp) {
   return sceKernelExitDeleteThread(0);
 }
 
+#define CREATE_ME_THREAD 1
+#define DELETE_ME_THREAD 2
+
+void meThreadSend(int command, int* meStopped) {
+  
+  static int thid = -1;
+  
+  switch (command) {
+    
+    case CREATE_ME_THREAD:
+      thid = sceKernelCreateThread("me-thread", meThread, 0x18, 0x2000, PSP_THREAD_ATTR_VFPU, 0);
+      if (thid >= 0) {
+      
+        int* param[1] = { meStopped };
+        sceKernelStartThread(thid, sizeof(meStopped), &param);
+      }
+      break;
+    
+    case DELETE_ME_THREAD:
+      if (thid >= 0) {
+        
+        SceUInt timeout = 500000;
+        sceKernelWaitThreadEnd(thid, &timeout);
+        sceKernelTerminateDeleteThread(thid);
+      }
+      break;
+  }
+}
+
+int meStopped = 0;
+
+int powerCallback(int unk, int flags, void *ptr) {
+  
+  if (flags & PSP_POWER_CB_POWER_SWITCH) {
+    
+    meThreadSend(DELETE_ME_THREAD, NULL);
+  }
+  
+  if (flags & PSP_POWER_CB_SUSPENDING) {
+  }
+  
+  if (flags & PSP_POWER_CB_RESUME_COMPLETE) {
+    
+    meThreadSend(CREATE_ME_THREAD, &meStopped);
+  }
+  return 0;
+}
+
 int main() {
     
   scePowerSetClockFrequency(333, 333, 166);
   pspDebugScreenInit();
   
-  int thid = -1;
-  int meStopped = 0;
-  
   const int error = meMistInit();
   if (error >= 0) {
     
-    thid = sceKernelCreateThread("me-thread", meThread, 0x18, 0x2000, PSP_THREAD_ATTR_VFPU, 0);
-    if (thid >= 0) {
-      int* param[1] = { &meStopped };
-      sceKernelStartThread(thid, sizeof(meStopped), &param);
-    }
+    int cid = sceKernelCreateCallback("power-callback", powerCallback, 0);
+    meThreadSend(CREATE_ME_THREAD, &meStopped);
+    scePowerRegisterCallback(0, cid);
   }
   else {
     meStopped = 1;
@@ -322,7 +365,8 @@ int main() {
     pspDebugScreenSetXY(0, 25);
     pspDebugScreenPrintf("Use Triangle/Cross to change its values");
             
-    sceDisplayWaitVblank();
+    //sceDisplayWaitVblank();
+    sceDisplayWaitVblankStartCB();
     sceKernelDelayThread(1);
     
   } while (!(ctl.Buttons & PSP_CTRL_HOME) || meStopped);
@@ -332,12 +376,7 @@ int main() {
     pspDebugScreenPrintf("ME thread not running, exiting...");
   }
   
-  if (thid >= 0) {
-    
-    SceUInt timeout = 500000;
-    sceKernelWaitThreadEnd(thid, &timeout);
-    sceKernelTerminateDeleteThread(thid);
-  }
+  meThreadSend(DELETE_ME_THREAD, NULL);
   sceKernelExitGame();
   return 0;
 }

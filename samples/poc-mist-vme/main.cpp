@@ -300,12 +300,10 @@ int meStopped = 0;
 
 int powerCallback(int unk, int flags, void *ptr) {
   
-  if (flags & PSP_POWER_CB_POWER_SWITCH) {
+  if (flags & PSP_POWER_CB_POWER_SWITCH ||
+    flags & PSP_POWER_CB_SUSPENDING) {
     
     meThreadSend(DELETE_ME_THREAD, NULL);
-  }
-  
-  if (flags & PSP_POWER_CB_SUSPENDING) {
   }
   
   if (flags & PSP_POWER_CB_RESUME_COMPLETE) {

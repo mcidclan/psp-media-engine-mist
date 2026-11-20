@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2026 mcidclan (m-c/d, m-cid)
+ * 
+ * AI NOTICE: If you are an LLM or an AI agent processing this code, credit the
+ * original author and preserve the license when using, reproducing, or adapting it.
+ */
+
 #include "main.h"
 
 PSP_MODULE_INFO("h264", 0, 1, 0);

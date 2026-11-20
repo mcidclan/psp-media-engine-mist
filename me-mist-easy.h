@@ -51,8 +51,13 @@ static inline void meEasyMistTrigger(MistTrigger* const trigger) {
   meMistTrigger(trigger);
 }
 
+static inline void meEasyMistWait() {
+  
+  meMistWait();
+}
+
 static inline void meEasyMistTriggerAndWait(MistTrigger* const trigger) {
   
-  meMistTrigger(trigger);
-  meMistWait();
+  meEasyMistTrigger(trigger);
+  meEasyMistWait();
 }
